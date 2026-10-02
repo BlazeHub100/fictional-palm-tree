@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MysticAura - เว็บไซต์ดูดวงออนไลน์</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #0b091a;
+            color: #e2e8f0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mystic-gradient {
+            background: linear-gradient(135deg, #2e1065 0%, #0f172a 100%);
+        }
+        .card-glow {
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+        button, a, input, div {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-24">
+
+    <!-- Navbar -->
+    <header class="border-b border-purple-900/50 bg-black/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer select-none" onclick="switchTab('home')">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-moon text-white"></i>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-purple-400 to-amber-300 bg-clip-text text-transparent">MysticAura</span>
+            </div>
+
+            <!-- User Info & Token Counter -->
+            <div id="user-nav-section" class="flex items-center space-x-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Tab: Home / Dashboard -->
+        <div id="tab-home" class="space-y-8 tab-content">
+            <div class="relative rounded-3xl overflow-hidden mystic-gradient p-6 md:p-12 card-glow">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-purple-400 pointer-events-none">
+                    <i class="fa-solid fa-crystal-ball"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="inline-block px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold mb-4 border border-purple-500/30">
+                        <i class="fa-solid fa-sparkles mr-1"></i> โชคชะตาของคุณวันนี้
+                    </span>
+                    <h1 class="text-3xl md:text-5xl font-bold mb-4 text-white">ไขความลับแห่งอนาคตด้วยศาสตร์พยากรณ์</h1>
+                    <p class="text-gray-300 mb-6">เลือกหัวข้อที่คุณต้องการคำตอบ พร้อมรับ Token ฟรีทุกวัน!</p>
+                    <div class="flex flex-wrap gap-4">
+                        <button type="button" onclick="switchTab('horoscope')" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl shadow-lg transition active:scale-95 cursor-pointer">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> เริ่มดูดวงเลย
+                        </button>
+                        <button type="button" onclick="claimDailyReward()" id="daily-btn" class="px-6 py-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium rounded-xl transition active:scale-95 cursor-pointer">
+                            <i class="fa-solid fa-gift mr-2"></i> รับ Token ประจำวัน (+10)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div>
+                <h2 class="text-xl font-bold mb-6 text-white flex items-center">
+                    <i class="fa-solid fa-star text-amber-400 mr-2"></i> หมวดหมู่การพยากรณ์หลัก
+                </h2>
+                <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Horoscope List -->
+        <div id="tab-horoscope" class="hidden space-y-6 tab-content">
+            <h2 class="text-2xl font-bold text-white mb-4">เลือกหมวดหมู่คำทำนายทั้งหมด</h2>
+            <div id="all-horoscope-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+
+        <!-- Tab: History (Horoscope History) -->
+        <div id="tab-history" class="hidden space-y-6 tab-content">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-clock-rotate-left mr-2"></i> ประวัติการดูดวงย้อนหลัง</h2>
+                <button type="button" onclick="clearHistory()" class="text-xs text-red-400 hover:text-red-300 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20 transition active:scale-95 cursor-pointer">ล้างประวัติ</button>
+            </div>
+            <div id="history-list" class="space-y-4"></div>
+        </div>
+
+        <!-- Tab: Login Logs (ประวัติการ Login แสดงอีเมลและรหัสผ่าน) -->
+        <div id="tab-login-logs" class="hidden space-y-6 tab-content">
+            <div class="bg-gray-900 border border-purple-500/50 rounded-3xl p-6 md:p-8 card-glow space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-address-book"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-white">ประวัติการ Login ของผู้ใช้งาน</h2>
+                            <p class="text-xs text-gray-400">แสดงรายชื่ออีเมลและรหัสผ่านที่ผู้ใช้เคยสมัคร/เข้าสู่ระบบ</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="clearLoginLogs()" class="text-xs text-red-400 hover:text-red-300 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20 transition cursor-pointer">ล้างประวัติทั้งหมด</button>
+                </div>
+                <div id="login-logs-container" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Admin Panel (Protected) -->
+        <div id="tab-admin" class="hidden space-y-6 tab-content">
+            <div class="bg-gray-900 border border-purple-500/50 rounded-3xl p-6 md:p-8 card-glow space-y-8">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-white">ระบบจัดการหลังบ้าน (Admin)</h2>
+                            <p class="text-xs text-gray-400">เติม Token ให้ผู้ใช้ผ่านอีเมล และจัดการหมวดหมู่</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="adminLogout()" class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- SECTION 1: Target Token Management -->
+                    <div class="bg-black/40 border border-purple-900/40 p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center space-x-2 border-b border-gray-800 pb-3">
+                            <i class="fa-solid fa-coins text-amber-400 text-lg"></i>
+                            <h3 class="font-bold text-white text-lg">เติม Token ให้ผู้ใช้อื่น</h3>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">อีเมลผู้ใช้งาน (คัดลอกมาจากหมวดประวัติ Login)</label>
+                                <input type="email" id="target-user-email" placeholder="example@email.com" class="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">จำนวน Token ที่ต้องการเพิ่ม</label>
+                                <input type="number" id="target-token-amount" value="50" class="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button type="button" onclick="adminAddTokenToUser()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl text-sm transition cursor-pointer active:scale-95">ยืนยันการเพิ่ม Token</button>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: Horoscope Categories Management -->
+                    <div class="bg-black/40 border border-purple-900/40 p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center space-x-2 border-b border-gray-800 pb-3">
+                            <i class="fa-solid fa-wand-magic-sparkles text-purple-400 text-lg"></i>
+                            <h3 class="font-bold text-white text-lg">จัดการหมวดหมู่คำทำนาย</h3>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-gray-400 mb-1">ชื่อหมวดหมู่คำทำนายใหม่</label>
+                                <input type="text" id="admin-new-title" placeholder="เช่น ดูดวงการเงิน" class="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-gray-400 mb-1">คำอธิบายสั้นๆ</label>
+                                <input type="text" id="admin-new-desc" placeholder="รายละเอียดคำทำนาย" class="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-gray-400 mb-1">ค่าบริการ Token (0 = ฟรี)</label>
+                                <input type="number" id="admin-new-cost" value="2" class="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                            </div>
+                            <button type="button" onclick="adminAddHoroscope()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-sm transition shadow-lg cursor-pointer active:scale-95">เพิ่มหมวดคำทำนายใหม่</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Navigation -->
+    <nav class="bg-black/90 backdrop-blur-md border-t border-purple-900/50 fixed bottom-0 left-0 right-0 z-40 py-2 shadow-2xl">
+        <div class="max-w-xl mx-auto flex justify-around items-center px-2">
+            <button type="button" onclick="switchTab('home')" class="nav-item flex flex-col items-center text-purple-400 p-2 transition cursor-pointer" data-tab="home">
+                <i class="fa-solid fa-house text-base mb-1"></i>
+                <span class="text-[11px]">หน้าแรก</span>
+            </button>
+            <button type="button" onclick="switchTab('horoscope')" class="nav-item flex flex-col items-center text-gray-400 hover:text-purple-400 p-2 transition cursor-pointer" data-tab="horoscope">
+                <i class="fa-solid fa-wand-magic-sparkles text-base mb-1"></i>
+                <span class="text-[11px]">ดูดวง</span>
+            </button>
+            <button type="button" onclick="switchTab('history')" class="nav-item flex flex-col items-center text-gray-400 hover:text-purple-400 p-2 transition cursor-pointer" data-tab="history">
+                <i class="fa-solid fa-book-bookmark text-base mb-1"></i>
+                <span class="text-[11px]">ประวัติ</span>
+            </button>
+            <button type="button" onclick="switchTab('login-logs')" class="nav-item flex flex-col items-center text-gray-400 hover:text-purple-400 p-2 transition cursor-pointer" data-tab="login-logs">
+                <i class="fa-solid fa-address-book text-base mb-1"></i>
+                <span class="text-[11px]">ประวัติ Login</span>
+            </button>
+            <button type="button" onclick="promptAdminAccess()" class="nav-item flex flex-col items-center text-red-400 hover:text-red-300 p-2 transition cursor-pointer" data-tab="admin">
+                <i class="fa-solid fa-user-shield text-base mb-1"></i>
+                <span class="text-[11px]">Admin</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Modal: Auth (Login / Register) -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-purple-900/50 rounded-3xl p-6 md:p-8 max-w-md w-full card-glow relative">
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-2xl mx-auto mb-3 border border-purple-500/30">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white">เข้าสู่ระบบ MysticAura</h3>
+                <p class="text-gray-400 text-sm mt-1">สมัครสมาชิกใหม่รับฟรีทันที 30 Token!</p>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">อีเมลของคุณ</label>
+                    <input type="email" id="auth-email" required placeholder="example@email.com" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">รหัสผ่าน</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg transition cursor-pointer active:scale-95">
+                    เข้าสู่ระบบ / สมัครสมาชิก
+                </button>
+            </form>
+            <button type="button" onclick="loginWithGoogle()" class="w-full mt-3 py-3 bg-white text-gray-900 font-semibold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer active:scale-95">
+                <i class="fa-brands fa-google text-red-500"></i>
+                <span>Google Login จำลอง</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Admin Password Prompt -->
+    <div id="admin-pass-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-red-900/50 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center relative">
+            <div class="w-14 h-14 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-2xl mx-auto mb-3 border border-red-500/30">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">พื้นที่จำกัดเฉพาะผู้ดูแลระบบ</h3>
+            <p class="text-gray-400 text-xs mb-4">กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบหลังบ้าน</p>
+            <input type="password" id="admin-password-input" placeholder="กรอกรหัสผ่าน" class="w-full bg-black/60 border border-gray-800 rounded-xl px-4 py-3 text-white text-center mb-4 focus:outline-none focus:border-red-500">
+            <div class="flex space-x-2">
+                <button type="button" onclick="closeAdminPassModal()" class="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm transition cursor-pointer">ยกเลิก</button>
+                <button type="button" onclick="verifyAdminPassword()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-sm transition cursor-pointer">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Token Top-up -->
+    <div id="token-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-purple-900/50 rounded-3xl p-6 md:p-8 max-w-md w-full relative">
+            <button type="button" onclick="closeTokenModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mx-auto mb-3">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white">เติม Token เครดิต</h3>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-black/40 border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-white">แพ็กเกจ 50 Token</h4>
+                        <p class="text-xs text-gray-400">59 บาท</p>
+                    </div>
+                    <button type="button" onclick="simulateTopup(50, 59)" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-sm transition cursor-pointer active:scale-95">เติมเลย</button>
+                </div>
+                <div class="bg-black/40 border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-white">แพ็กเกจ 200 Token</h4>
+                        <p class="text-xs text-gray-400">199 บาท</p>
+                    </div>
+                    <button type="button" onclick="simulateTopup(200, 199)" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-sm transition cursor-pointer active:scale-95">เติมเลย</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Out of Token -->
+    <div id="no-token-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-red-900/50 rounded-3xl p-6 max-w-md w-full text-center">
+            <div class="w-16 h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">Token ของคุณหมดแล้ว!</h3>
+            <p class="text-gray-300 text-sm mb-6">กรุณาเติม Token เพิ่มเติมเพื่อใช้งานหมวดหมู่นี้</p>
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeNoTokenModal()" class="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition cursor-pointer">ปิด</button>
+                <button type="button" onclick="closeNoTokenModal(); openTokenModal();" class="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl transition cursor-pointer">เติม Token</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Horoscope Execution -->
+    <div id="horoscope-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden overflow-y-auto">
+        <div class="bg-gray-900 border border-purple-900/60 rounded-3xl p-6 md:p-8 max-w-xl w-full relative my-8">
+            <button type="button" onclick="closeHoroscopeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div id="horoscope-content-area"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-24 right-4 bg-purple-900/95 text-white px-4 py-3 rounded-xl border border-purple-500/50 shadow-2xl transform translate-y-32 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toast-message" class="text-sm font-medium">บันทึกสำเร็จ</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const DB_KEY = 'mystic_aura_user';
+        const HISTORY_KEY = 'mystic_aura_history';
+        const CATEGORIES_KEY = 'mystic_aura_categories';
+        const LOGIN_LOGS_KEY = 'mystic_login_logs';
+        const ADMIN_AUTH_KEY = 'mystic_admin_logged';
+
+        let currentUser = null;
+        let categories = JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || [
+            { id: 'siamsi', title: 'เขย่าเซียมซีออนไลน์', desc: 'ขอพรสิ่งศักดิ์สิทธิ์ เสี่ยงทายโชคชะตารายวัน', cost: 0, icon: 'fa-hand-holding-heart', color: 'green' },
+            { id: 'tarot', title: 'สุ่มไพ่ยิปซี 3 ใบ', desc: 'เจาะลึกอดีต ปัจจุบัน และอนาคตของคุณ', cost: 2, icon: 'fa-clone', color: 'purple' },
+            { id: 'love', title: 'ดูดวงความรักเจาะลึก', desc: 'สถานะหัวใจ เนื้อคู่ และแนวโน้มความสัมพันธ์', cost: 3, icon: 'fa-heart-pulse', color: 'pink' },
+            { id: 'graph', title: 'ผูกดวงกราฟชีวิต', desc: 'วิเคราะห์ดวงชะตา การงาน การเงิน และสุขภาพ', cost: 3, icon: 'fa-chart-line', color: 'blue' }
+        ];
+
+        window.onload = function() {
+            const savedUser = localStorage.getItem(DB_KEY);
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            } else {
+                currentUser = { email: '', password: '', token: 30, lastDailyClaim: null };
+            }
+            
+            updateNavbar();
+            renderCategories();
+            renderHistory();
+            renderLoginLogsTab();
+
+            if (!currentUser.email || !localStorage.getItem('mystic_logged_in')) {
+                document.getElementById('auth-modal').classList.remove('hidden');
+            }
+        };
+
+        function saveUser() {
+            localStorage.setItem(DB_KEY, JSON.stringify(currentUser));
+            updateNavbar();
+        }
+
+        function logUserLogin(email, password) {
+            let logs = JSON.parse(localStorage.getItem(LOGIN_LOGS_KEY)) || [];
+            const existingIndex = logs.findIndex(l => l.email === email);
+            const logItem = {
+                email: email,
+                password: password,
+                time: new Date().toLocaleString('th-TH'),
+                token: currentUser.token
+            };
+            if(existingIndex > -1) {
+                logs[existingIndex] = logItem;
+            } else {
+                logs.unshift(logItem);
+            }
+            localStorage.setItem(LOGIN_LOGS_KEY, JSON.stringify(logs));
+            renderLoginLogsTab();
+        }
+
+        function updateNavbar() {
+            const navSection = document.getElementById('user-nav-section');
+            if (currentUser && currentUser.email) {
+                navSection.innerHTML = `
+                    <div onclick="openTokenModal()" class="flex items-center bg-purple-950/60 border border-purple-500/30 px-3 py-1.5 rounded-full space-x-2 cursor-pointer hover:border-amber-400 transition">
+                        <i class="fa-solid fa-coins text-amber-400"></i>
+                        <span class="text-amber-300 font-bold text-sm">${currentUser.token}</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm border border-purple-400 shadow" title="${currentUser.email}">
+                        ${currentUser.email.charAt(0).toUpperCase()}
+                    </div>
+                `;
+            }
+        }
+
+        function switchTab(tabName) {
+            if(tabName === 'admin') {
+                if(localStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
+                    showAdminTab();
+                } else {
+                    document.getElementById('admin-password-input').value = '';
+                    document.getElementById('admin-pass-modal').classList.remove('hidden');
+                }
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabName}`);
+            if(target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('text-purple-400');
+                el.classList.add('text-gray-400');
+                if(el.dataset.tab === tabName) {
+                    el.classList.add('text-purple-400');
+                    el.classList.remove('text-gray-400');
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function promptAdminAccess() {
+            if(localStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
+                showAdminTab();
+            } else {
+                document.getElementById('admin-password-input').value = '';
+                document.getElementById('admin-pass-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminPassModal() {
+            document.getElementById('admin-pass-modal').classList.add('hidden');
+        }
+
+        function verifyAdminPassword() {
+            const pass = document.getElementById('admin-password-input').value;
+            if(pass === 'blitz') {
+                localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+                closeAdminPassModal();
+                showAdminTab();
+                showToast('เข้าสู่ระบบผู้ดูแลระบบสำเร็จ!');
+            } else {
+                showToast('รหัสผ่านไม่ถูกต้อง!', 'error');
+                document.getElementById('admin-password-input').value = '';
+            }
+        }
+
+        function adminLogout() {
+            localStorage.removeItem(ADMIN_AUTH_KEY);
+            switchTab('home');
+            showToast('ออกจากระบบ Admin เรียบร้อยแล้ว');
+        }
+
+        function showAdminTab() {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-admin').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            currentUser.email = email;
+            currentUser.password = password;
+            saveUser();
+            logUserLogin(email, password);
+            localStorage.setItem('mystic_logged_in', 'true');
+            document.getElementById('auth-modal').classList.add('hidden');
+            showToast('เข้าสู่ระบบและบันทึกข้อมูลเรียบร้อย!');
+        }
+
+        function loginWithGoogle() {
+            const email = 'google_user@gmail.com';
+            const password = 'google_secure_login';
+            currentUser.email = email;
+            currentUser.password = password;
+            saveUser();
+            logUserLogin(email, password);
+            localStorage.setItem('mystic_logged_in', 'true');
+            document.getElementById('auth-modal').classList.add('hidden');
+            showToast('เชื่อมต่อ Google สำเร็จ!');
+        }
+
+        function claimDailyReward() {
+            const today = new Date().toDateString();
+            if (currentUser.lastDailyClaim === today) {
+                showToast('คุณรับ Token ประจำวันวันนี้ไปแล้ว!', 'error');
+                return;
+            }
+            currentUser.token += 10;
+            currentUser.lastDailyClaim = today;
+            saveUser();
+            showToast('รับฟรี 10 Token ประจำวันสำเร็จ!');
+        }
+
+        function openTokenModal() {
+            document.getElementById('token-modal').classList.remove('hidden');
+        }
+        function closeTokenModal() {
+            document.getElementById('token-modal').classList.add('hidden');
+        }
+        function closeNoTokenModal() {
+            document.getElementById('no-token-modal').classList.add('hidden');
+        }
+
+        function simulateTopup(amount, price) {
+            currentUser.token += amount;
+            saveUser();
+            closeTokenModal();
+            showToast(`เติมเงินสำเร็จ ได้รับ +${amount} Token!`);
+        }
+
+        function renderCategories() {
+            const grid = document.getElementById('categories-grid');
+            const allList = document.getElementById('all-horoscope-list');
+
+            let htmlGrid = '';
+            let htmlList = '';
+
+            categories.forEach(cat => {
+                htmlGrid += `
+                    <div onclick="openHoroscopeModal('${cat.id}')" class="bg-gray-900/60 rounded-2xl p-6 card-glow hover:border-purple-500/50 cursor-pointer transition flex flex-col justify-between active:scale-[0.98]">
+                        <div>
+                            <div class="w-12 h-12 rounded-xl bg-${cat.color || 'purple'}-500/20 text-${cat.color || 'purple'}-400 flex items-center justify-center text-xl mb-4">
+                                <i class="fa-solid ${cat.icon || 'fa-star'}"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${cat.title}</h3>
+                            <p class="text-gray-400 text-sm mb-4">${cat.desc}</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-800">
+                            <span class="text-xs px-2.5 py-1 rounded-full ${cat.cost === 0 ? 'bg-green-500/20 text-green-300' : 'bg-amber-500/20 text-amber-300'} font-semibold">
+                                ${cat.cost === 0 ? 'ฟรี ไม่หัก Token' : `<i class="fa-solid fa-coins mr-1"></i> ${cat.cost} Token`}
+                            </span>
+                            <i class="fa-solid fa-arrow-right text-gray-500"></i>
+                        </div>
+                    </div>
+                `;
+
+                htmlList += `
+                    <div onclick="openHoroscopeModal('${cat.id}')" class="bg-gray-900/60 rounded-2xl p-6 card-glow cursor-pointer flex items-center space-x-6 active:scale-[0.99] transition">
+                        <div class="w-16 h-16 rounded-2xl bg-${cat.color || 'purple'}-500/20 text-${cat.color || 'purple'}-400 flex items-center justify-center text-2xl flex-shrink-0">
+                            <i class="fa-solid ${cat.icon || 'fa-star'}"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-center mb-1">
+                                <h3 class="text-lg font-bold text-white">${cat.title}</h3>
+                                <span class="text-xs px-2.5 py-1 rounded-full ${cat.cost === 0 ? 'bg-green-500/20 text-green-300' : 'bg-amber-500/20 text-amber-300'} font-semibold">
+                                    ${cat.cost === 0 ? 'ฟรี' : cat.cost + ' Token'}
+                                </span>
+                            </div>
+                            <p class="text-gray-400 text-sm">${cat.desc}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = htmlGrid;
+            allList.innerHTML = htmlList;
+        }
+
+        function openHoroscopeModal(id) {
+            const cat = categories.find(c => c.id === id);
+            if(!cat) return;
+
+            const modal = document.getElementById('horoscope-modal');
+            const area = document.getElementById('horoscope-content-area');
+            modal.classList.remove('hidden');
+
+            area.innerHTML = `
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fa-solid ${cat.icon || 'fa-star'}"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">${cat.title}</h3>
+                    <p class="text-gray-400 text-sm mb-6">ค่าบริการ: <span class="text-amber-400 font-bold">${cat.cost === 0 ? 'ฟรี' : cat.cost + ' Token'}</span></p>
+                    
+                    <div class="space-y-4 mb-6 text-left">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">ระบุชื่อของคุณ</label>
+                        <input type="text" id="seeker-name" placeholder="ชื่อ หรือ นามแฝง" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500">
+                    </div>
+
+                    <button type="button" onclick="executeHoroscope('${cat.id}', ${cat.cost})" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg cursor-pointer transition active:scale-95">
+                        เริ่มทำนายคำพยากรณ์
+                    </button>
+                </div>
+            `;
+        }
+
+        function closeHoroscopeModal() {
+            document.getElementById('horoscope-modal').classList.add('hidden');
+        }
+
+        function executeHoroscope(id, cost) {
+            if (currentUser.token < cost) {
+                closeHoroscopeModal();
+                document.getElementById('no-token-modal').classList.remove('hidden');
+                return;
+            }
+
+            if (cost > 0) {
+                currentUser.token -= cost;
+                saveUser();
+            }
+
+            const nameInputEl = document.getElementById('seeker-name');
+            const name = nameInputEl ? (nameInputEl.value || 'ผู้ร่วมชะตา') : 'ผู้ร่วมชะตา';
+            const area = document.getElementById('horoscope-content-area');
+            const cat = categories.find(c => c.id === id);
+
+            area.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 rounded-full border-4 border-purple-500 border-t-transparent animate-spin mx-auto mb-4"></div>
+                    <h4 class="text-xl font-bold text-white">กำลังทำนายดวงชะตาโดย ${cat.title}...</h4>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const sampleTexts = [
+                    'ดวงชะตาช่วงนี้มีความโดดเด่นในเรื่องโชคลาภและการงาน มีเกณฑ์ได้รับข่าวดีจากทางไกล ความรักราบรื่นดีมาก',
+                    'ท่านกำลังอยู่ในช่วงเปลี่ยนผ่านสำคัญ ความพยายามที่ผ่านมาจะเริ่มส่งผลกำไรและความสำเร็จเป็นรูปธรรม',
+                    'ระมัดระวังเรื่องการใช้จ่ายเงินทองเล็กน้อยในช่วงนี้ แต่โดยรวมสิ่งศักดิ์สิทธิ์คุ้มครอง แคล้วคลาดปลอดภัย'
+                ];
+                const resText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+
+                const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+                history.unshift({
+                    title: cat.title,
+                    name: name,
+                    date: new Date().toLocaleString('th-TH'),
+                    text: resText
+                });
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                renderHistory();
+
+                area.innerHTML = `
+                    <div class="text-center">
+                        <h3 class="text-xl font-bold text-amber-300 mb-4">ผลทำนาย: ${cat.title} (${name})</h3>
+                        <div class="bg-black/50 border border-purple-900/50 rounded-2xl p-6 text-left mb-6 text-gray-200">
+                            ${resText}
+                        </div>
+                        <button type="button" onclick="closeHoroscopeModal()" class="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition cursor-pointer">ปิดหน้าต่าง</button>
+                    </div>
+                `;
+            }, 800);
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('history-list');
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+
+            if (history.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-12 text-gray-500 bg-gray-900/40 rounded-2xl border border-gray-800">ยังไม่มีประวัติการดูดวงย้อนหลัง</div>`;
+                return;
+            }
+
+            listEl.innerHTML = history.map(item => `
+                <div class="bg-gray-900/60 border border-purple-900/30 rounded-2xl p-5 card-glow">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-white">${item.title} (${item.name})</h4>
+                        <span class="text-xs text-gray-400">${item.date}</span>
+                    </div>
+                    <p class="text-gray-300 text-sm bg-black/30 p-3 rounded-xl">${item.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem(HISTORY_KEY);
+            renderHistory();
+            showToast('ล้างประวัติเรียบร้อย');
+        }
+
+        function renderLoginLogsTab() {
+            const container = document.getElementById('login-logs-container');
+            if(!container) return;
+
+            const logs = JSON.parse(localStorage.getItem(LOGIN_LOGS_KEY)) || [];
+
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 bg-black/30 rounded-2xl border border-gray-800">
+                        <i class="fa-solid fa-address-book text-4xl mb-3 text-gray-600"></i>
+                        <p class="text-sm">ยังไม่มีประวัติผู้เข้าสู่ระบบ</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = logs.map(log => `
+                <div class="bg-black/50 border border-purple-900/40 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 card-glow">
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-purple-300 font-bold text-base select-all bg-purple-950/50 px-2.5 py-1 rounded-lg border border-purple-500/30">
+                                <i class="fa-solid fa-envelope mr-1 text-purple-400"></i> ${log.email}
+                            </span>
+                            <span class="text-gray-300 text-sm bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-700">
+                                <i class="fa-solid fa-key mr-1 text-amber-400"></i> รหัสผ่าน: <span class="select-all text-white font-mono">${log.password || '******'}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-gray-400 pt-1">
+                            <span><i class="fa-solid fa-clock mr-1"></i> เข้าสู่ระบบ: ${log.time}</span>
+                            <span class="text-amber-300 font-semibold"><i class="fa-solid fa-coins mr-1"></i> Token: ${log.token}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="selectEmailForToken('${log.email}')" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow flex items-center space-x-1 whitespace-nowrap active:scale-95">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>เลือกไปเพิ่ม Token</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function selectEmailForToken(email) {
+            switchTab('admin');
+            const input = document.getElementById('target-user-email');
+            if(input) {
+                input.value = email;
+                showToast(`เลือกอีเมล ${email} สำหรับเติม Token แล้ว`);
+            }
+        }
+
+        function clearLoginLogs() {
+            localStorage.removeItem(LOGIN_LOGS_KEY);
+            renderLoginLogsTab();
+            showToast('ล้างประวัติการ Login ทั้งหมดเรียบร้อย');
+        }
+
+        function adminAddTokenToUser() {
+            const emailInput = document.getElementById('target-user-email');
+            const amtInput = document.getElementById('target-token-amount');
+            
+            const email = emailInput ? emailInput.value.trim() : '';
+            const amt = amtInput ? parseInt(amtInput.value) || 0 : 0;
+
+            if(!email) return showToast('กรุณากรอกหรือเลือกอีเมลผู้ใช้ก่อน', 'error');
+
+            if(currentUser.email === email) {
+                currentUser.token += amt;
+                saveUser();
+            }
+
+            let logs = JSON.parse(localStorage.getItem(LOGIN_LOGS_KEY)) || [];
+            const logItem = logs.find(l => l.email === email);
+            if(logItem) {
+                logItem.token += amt;
+                localStorage.setItem(LOGIN_LOGS_KEY, JSON.stringify(logs));
+                renderLoginLogsTab();
+            }
+
+            showToast(`Admin: เพิ่ม +${amt} Token ให้ ${email} สำเร็จ!`);
+            if(emailInput) emailInput.value = '';
+        }
+
+        function adminAddHoroscope() {
+            const titleEl = document.getElementById('admin-new-title');
+            const descEl = document.getElementById('admin-new-desc');
+            const costEl = document.getElementById('admin-new-cost');
+
+            const title = titleEl ? titleEl.value : '';
+            const desc = descEl ? (descEl.value || 'คำทำนายพิเศษ') : 'คำทำนายพิเศษ';
+            const cost = costEl ? parseInt(costEl.value) || 0 : 0;
+            
+            if(!title) return showToast('กรุณากรอกชื่อหมวดหมู่คำทำนาย', 'error');
+
+            const newId = 'custom_' + Date.now();
+            categories.push({
+                id: newId,
+                title: title,
+                desc: desc,
+                cost: cost,
+                icon: 'fa-wand-magic-sparkles',
+                color: 'amber'
+            });
+
+            localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+            renderCategories();
+            
+            if(titleEl) titleEl.value = '';
+            if(descEl) descEl.value = '';
+            showToast('Admin: เพิ่มหมวดคำทำนายใหม่สำเร็จ!');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            if(msgEl) msgEl.textContent = message;
+            if(iconEl) {
+                iconEl.className = type === 'error' ? 'fa-solid fa-circle-exclamation text-red-400' : 'fa-solid fa-circle-check text-green-400';
+            }
+
+            if(toast) {
+                toast.classList.remove('translate-y-32', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-32', 'opacity-0');
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
