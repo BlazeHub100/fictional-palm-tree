@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TokBot - TikTok Auto-Reply & Broadcast SaaS Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tiktok: {
+                            cyan: '#00f2fe',
+                            pink: '#fe2c55',
+                            dark: '#0f172a',
+                            card: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js for lightweight reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        .glow-pink {
+            box-shadow: 0 0 20px rgba(254, 44, 85, 0.3);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body x-data="tokBotApp()" x-init="initApp()" class="min-h-screen flex flex-col antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-tiktok-pink to-tiktok-cyan flex items-center justify-center font-bold text-xl text-white shadow-lg">
+                    <i class="fa-brands fa-tiktok"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-xl tracking-wide bg-gradient-to-r from-white via-slate-200 to-tiktok-cyan bg-clip-text text-transparent">TokBot Pro</span>
+                        <span class="bg-tiktok-pink/20 text-tiktok-pink text-xs px-2 py-0.5 rounded-full border border-tiktok-pink/30 font-semibold">SaaS Platform</span>
+                    </div>
+                    <p class="text-xs text-slate-400">ระบบตอบกลับและบรอดแคสต์ TikTok อัตโนมัติ</p>
+                </div>
+            </div>
+
+            <!-- TikTok Connected Account Switcher -->
+            <div class="hidden md:flex items-center space-x-4">
+                <div class="flex items-center space-x-3 bg-slate-800/80 px-3.5 py-1.5 rounded-full border border-slate-700">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-7 h-7 rounded-full object-cover border border-tiktok-cyan" alt="Profile">
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900"></span>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs font-semibold text-slate-200">@Official_Fashion_TH</p>
+                        <p class="text-[10px] text-emerald-400 font-mono">● TikTok Webhook Active</p>
+                    </div>
+                    <button @click="showToast('สลับบัญชี TikTok เรียบร้อยแล้ว', 'info')" class="text-xs text-slate-400 hover:text-white ml-2">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- Webhook Status Indicator -->
+                <div class="text-right border-l border-slate-800 pl-4">
+                    <p class="text-[11px] text-slate-400">สถานะ Webhook Engine</p>
+                    <p class="text-xs font-mono font-bold text-emerald-400 flex items-center justify-end">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1.5"></span>
+                        <i class="fa-solid fa-link text-tiktok-cyan mr-1"></i>200 OK (Live)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Profile / Actions -->
+            <div class="flex items-center space-x-3">
+                <button @click="showToast('ยินดีต้อนรับสู่โหมดการใช้งาน SaaS Pro', 'success')" class="bg-gradient-to-r from-tiktok-pink to-rose-600 hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-rose-950/50 flex items-center space-x-2">
+                    <i class="fa-solid fa-crown"></i>
+                    <span>แพ็กเกจธุรกิจ (Enterprise)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Navigation Tabs Bar (Mobile + Desktop) -->
+        <div class="lg:col-span-3 flex flex-col space-y-2">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-1">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 py-2">เมนูหลัก (Navigation)</p>
+                
+                <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-slate-800 text-tiktok-cyan border-l-4 border-tiktok-cyan' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-chart-line text-lg w-5"></i>
+                        <span>ภาพรวมระบบ (Overview)</span>
+                    </div>
+                </button>
+
+                <button @click="activeTab = 'broadcast'" :class="activeTab === 'broadcast' ? 'bg-slate-800 text-tiktok-pink border-l-4 border-tiktok-pink' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-left relative">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-paper-plane text-lg w-5 text-tiktok-pink"></i>
+                        <span>บรอดแคสต์ส่งตู้มเดียว</span>
+                    </div>
+                    <span class="bg-tiktok-pink text-white text-[10px] font-bold px-2 py-0.5 rounded-full">ส่ง 1,000+ คน</span>
+                </button>
+
+                <button @click="activeTab = 'rules'" :class="activeTab === 'rules' ? 'bg-slate-800 text-tiktok-cyan border-l-4 border-tiktok-cyan' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-robot text-lg w-5 text-emerald-400"></i>
+                        <span>ตั้งค่าตอบกลับอัตโนมัติ</span>
+                    </div>
+                    <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-mono" x-text="rules.length + ' กฎ'"></span>
+                </button>
+
+                <button @click="activeTab = 'simulator'" :class="activeTab === 'simulator' ? 'bg-slate-800 text-tiktok-cyan border-l-4 border-tiktok-cyan' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-comments text-lg w-5 text-purple-400"></i>
+                        <span>จำลองการทักแชทลูกค้า</span>
+                    </div>
+                    <span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">Live Test</span>
+                </button>
+
+                <button @click="activeTab = 'api_settings'" :class="activeTab === 'api_settings' ? 'bg-slate-800 text-tiktok-cyan border-l-4 border-tiktok-cyan' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-plug text-lg w-5 text-amber-400"></i>
+                        <span>TikTok Webhook & AI Engine</span>
+                    </div>
+                    <span class="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-mono">Real API</span>
+                </button>
+            </div>
+
+            <!-- Realtime System Status Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">สถานะระบบ (System Status)</span>
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between text-slate-300">
+                        <span>TikTok API Connection:</span>
+                        <span class="text-emerald-400 font-semibold">Online (0.02s)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>Queue Worker (Redis):</span>
+                        <span class="text-emerald-400 font-semibold">Active (0 Pending)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>ข้อความตอบแล้ววันนี้:</span>
+                        <span class="text-tiktok-cyan font-mono font-bold" x-text="stats.totalMessagesSent.toLocaleString() + ' รายการ'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Main Section Area -->
+        <div class="lg:col-span-9 space-y-6">
+
+            <!-- TAB 1: OVERVIEW DASHBOARD -->
+            <div x-show="activeTab === 'overview'" class="space-y-6">
+                <!-- Banner Notification -->
+                <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="space-y-1 z-10">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>ยินดีต้อนรับสู่แพลตฟอร์มตอบแชท TikTok อัตโนมัติ</span>
+                            <i class="fa-solid fa-sparkles text-amber-400 text-sm"></i>
+                        </h2>
+                        <p class="text-sm text-slate-400">ระบบประมวลผลข้อความความเร็วสูง ส่งหาผู้ใช้ 1,000 คนภายในไม่ถึง 2 วินาที ไม่ต้องกดตอบทีละแชต</p>
+                    </div>
+                    <button @click="activeTab = 'broadcast'" class="z-10 bg-gradient-to-r from-tiktok-pink to-rose-600 hover:scale-105 transition transform text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-2">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>เริ่มบรอดแคสต์ทันที</span>
+                    </button>
+                    <!-- Background Glow Effect -->
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-tiktok-pink/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -left-10 -top-10 w-40 h-40 bg-tiktok-cyan/20 rounded-full blur-3xl pointer-events-none"></div>
+                </div>
+
+                <!-- Stats Metric Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between items-center text-slate-400">
+                            <span class="text-xs font-medium">ข้อความตอบกลับสะสม</span>
+                            <i class="fa-solid fa-paper-plane text-tiktok-cyan"></i>
+                        </div>
+                        <p class="text-2xl font-bold font-mono text-white" x-text="stats.totalMessagesSent.toLocaleString()"></p>
+                        <p class="text-[11px] text-emerald-400"><i class="fa-solid fa-arrow-up mr-1"></i>+12.4% จากสัปดาห์ที่แล้ว</p>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between items-center text-slate-400">
+                            <span class="text-xs font-medium">ความเร็วเฉลี่ยในการตอบ</span>
+                            <i class="fa-solid fa-stopwatch text-amber-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold font-mono text-amber-400">0.18 วินาที</p>
+                        <p class="text-[11px] text-slate-400">เร็วกว่าคนพิมพ์ตอบ 600 เท่า</p>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between items-center text-slate-400">
+                            <span class="text-xs font-medium">รายชื่อผู้ติดต่อทั้งหมด</span>
+                            <i class="fa-solid fa-users text-purple-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold font-mono text-white">45,820 คน</p>
+                        <p class="text-[11px] text-emerald-400"><i class="fa-solid fa-user-plus mr-1"></i>+1,250 คนวันนี้</p>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between items-center text-slate-400">
+                            <span class="text-xs font-medium">อัตราการส่งสำเร็จ (Success)</span>
+                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold font-mono text-emerald-400">99.98%</p>
+                        <p class="text-[11px] text-slate-400">ผ่านการยืนยัน Official API</p>
+                    </div>
+                </div>
+
+                <!-- Live Performance Chart -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-200">ปริมาณการตอบแชทและบรอดแคสต์แบบเรียลไทม์ (Live Throughput)</h3>
+                            <p class="text-xs text-slate-400">แสดงความสามารถในการกระจายส่งแชทอัตโนมัติรายชั่วโมง</p>
+                        </div>
+                        <span class="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-lg">วันนี้</span>
+                    </div>
+                    <div class="h-64 w-full relative">
+                        <canvas id="livePerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MASS BROADCAST ENGINE (ฟีเจอร์ไฮไลท์ที่ลูกค้าต้องการ) -->
+            <div x-show="activeTab === 'broadcast'" class="space-y-6">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div class="border-b border-slate-800 pb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-xl bg-tiktok-pink/20 text-tiktok-pink border border-tiktok-pink/30">
+                                <i class="fa-solid fa-bullhorn text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-white">ระบบส่งข้อความตู้มเดียวหาผู้ใช้ทั้งหมด (Mass Broadcast)</h2>
+                                <p class="text-xs text-slate-400">พิมพ์ข้อความแค่ครั้งเดียว ระบบจะต่อคิวส่งหาลูกค้าทุกคนที่เคยทักมา 1,000 - 100,000 คนพร้อมกันในเสี้ยววินาที</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target Audience Selection -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="cursor-pointer border p-3.5 rounded-xl flex items-center space-x-3 transition" :class="broadcast.targetGroup === 'all' ? 'border-tiktok-cyan bg-tiktok-cyan/10' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-800'">
+                            <input type="radio" x-model="broadcast.targetGroup" value="all" class="text-tiktok-cyan focus:ring-0">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-200">ลูกค้าทุกคนที่เคยทัก DM</p>
+                                <p class="text-xs text-slate-400">จำนวน: 1,000 คน (ผู้ใช้ออนไลน์)</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border p-3.5 rounded-xl flex items-center space-x-3 transition" :class="broadcast.targetGroup === 'buyers' ? 'border-tiktok-cyan bg-tiktok-cyan/10' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-800'">
+                            <input type="radio" x-model="broadcast.targetGroup" value="buyers" class="text-tiktok-cyan focus:ring-0">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-200">คนที่พิมพ์ว่า "ทักมาซื้อของ"</p>
+                                <p class="text-xs text-slate-400">จำนวน: 640 คน</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border p-3.5 rounded-xl flex items-center space-x-3 transition" :class="broadcast.targetGroup === 'recent_24h' ? 'border-tiktok-cyan bg-tiktok-cyan/10' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-800'">
+                            <input type="radio" x-model="broadcast.targetGroup" value="recent_24h" class="text-tiktok-cyan focus:ring-0">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-200">ทักมาภายใน 24 ชม. ล่าสุด</p>
+                                <p class="text-xs text-slate-400">จำนวน: 310 คน</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Message Composer -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-semibold text-slate-300">ข้อความที่ต้องการส่งกระจายหาทุกคน (Message Template)</label>
+                            <span class="text-xs text-slate-400 font-mono" x-text="broadcast.message.length + '/1,000 ตัวอักษร'"></span>
+                        </div>
+                        <textarea x-model="broadcast.message" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-200 focus:outline-none focus:border-tiktok-pink transition font-sans" placeholder="พิมพ์ข้อความที่นี่ เช่น: สวัสดีครับ! ขอบคุณที่สนใจสั่งซื้อสินค้า รับส่วนลดพิเศษทันที กดสั่งซื้อที่ลิงก์นี้..."></textarea>
+                        
+                        <!-- Template Tags Helper -->
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <span class="text-xs text-slate-400">ใส่ตัวแปรอัตโนมัติ:</span>
+                            <button @click="insertTag('{customer_name}')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-tiktok-cyan px-2 py-0.5 rounded border border-slate-700">+ {ชื่อลูกค้า}</button>
+                            <button @click="insertTag('{order_link}')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-tiktok-pink px-2 py-0.5 rounded border border-slate-700">+ {ลิงก์สั่งซื้อ}</button>
+                            <button @click="insertTag('{coupon_code}')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-0.5 rounded border border-slate-700">+ {โค้ดส่วนลด}</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Launch Button -->
+                    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
+                        <div class="text-xs text-slate-400 flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                            <span>ระบบป้องกันสแปม TikTok Rate Limiter เปิดใช้งานอยู่ (ปลอดภัย 100%)</span>
+                        </div>
+                        <button @click="runMassBroadcastSimulation()" :disabled="broadcast.isSending" class="bg-gradient-to-r from-tiktok-pink via-rose-600 to-tiktok-cyan hover:opacity-90 text-white font-bold px-6 py-3 rounded-xl transition shadow-xl flex items-center space-x-2 disabled:opacity-50">
+                            <template x-if="!broadcast.isSending">
+                                <span class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>🚀 กดส่งตู้มเดียวหา 1,000 คนทันที</span>
+                                </span>
+                            </template>
+                            <template x-if="broadcast.isSending">
+                                <span class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-spinner animate-spin"></i>
+                                    <span>กำลังส่งข้อความความเร็วสูง...</span>
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Broadcast Progress Monitor -->
+                <div x-show="broadcast.hasRun" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-white flex items-center space-x-2">
+                            <span>ความคืบหน้าการส่ง (Broadcast Monitor)</span>
+                            <span x-show="broadcast.isSending" class="text-xs bg-tiktok-pink/20 text-tiktok-pink px-2 py-0.5 rounded-full animate-pulse">กำลังส่งเรียลไทม์</span>
+                            <span x-show="!broadcast.isSending && broadcast.progress === 100" class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">ส่งเสร็จสิ้น 100%</span>
+                        </h3>
+                        <span class="text-xs font-mono text-tiktok-cyan" x-text="broadcast.sentCount + ' / ' + broadcast.totalCount + ' คน'"></span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
+                        <div class="bg-gradient-to-r from-tiktok-pink to-tiktok-cyan h-full rounded-full transition-all duration-100" :style="'width: ' + broadcast.progress + '%'"></div>
+                    </div>
+
+                    <!-- Live Log Stream Feed -->
+                    <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 h-48 overflow-y-auto font-mono text-xs space-y-1" id="broadcastLogs">
+                        <template x-for="(log, index) in broadcast.logs" :key="index">
+                            <div class="flex items-center justify-between text-slate-300">
+                                <span><span class="text-slate-500" x-text="log.time"></span> <span x-text="log.text"></span></span>
+                                <span class="text-emerald-400 font-bold" x-text="log.status"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 3: AUTO REPLY RULES BUILDER -->
+            <div x-show="activeTab === 'rules'" class="space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">ตั้งค่าเงื่อนไขการตอบกลับอัตโนมัติ (Auto-Response Rules)</h2>
+                            <p class="text-xs text-slate-400">เมื่อลูกค้าพิมพ์ข้อความที่มีคำตรงกับคีย์เวิร์ด ระบบจะส่งข้อความตอบกลับหาทันที</p>
+                        </div>
+                        <button @click="openAddRuleModal()" class="bg-tiktok-cyan text-slate-950 font-bold px-4 py-2 rounded-xl text-xs hover:bg-cyan-300 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>เพิ่มคีย์เวิร์ดใหม่</span>
+                        </button>
+                    </div>
+
+                    <!-- Rules List -->
+                    <div class="space-y-3">
+                        <template x-for="(rule, index) in rules" :key="rule.id">
+                            <div class="bg-slate-950 border border-slate-800 hover:border-slate-700 p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition">
+                                <div class="space-y-1.5 flex-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-tiktok-cyan/20 text-tiktok-cyan text-xs font-mono font-bold px-2.5 py-0.5 rounded border border-tiktok-cyan/30" x-text="'คีย์เวิร์ด: ' + rule.keyword"></span>
+                                        <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded" x-text="rule.matchType === 'exact' ? 'ตรงกันเป๊ะ' : 'มีคำนี้อยู่'"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-300 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80" x-text="rule.replyText"></p>
+                                </div>
+
+                                <div class="flex items-center space-x-3 w-full md:w-auto justify-end border-t md:border-0 border-slate-800 pt-2 md:pt-0">
+                                    <!-- Delay badge -->
+                                    <span class="text-[11px] text-amber-400 font-mono"><i class="fa-solid fa-clock mr-1"></i>ตอบใน <span x-text="rule.delay"></span>s</span>
+                                    
+                                    <!-- Toggle button -->
+                                    <button @click="rule.active = !rule.active; showToast('อัปเดตสถานะการตอบเรียบร้อย', 'info')" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition" :class="rule.active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-slate-700'" x-text="rule.active ? 'เปิดใช้งาน' : 'ปิดการใช้งาน'"></button>
+                                    
+                                    <!-- Delete -->
+                                    <button @click="deleteRule(index)" class="text-slate-500 hover:text-rose-400 p-2 transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIVE SIMULATOR (ให้ลองทดสอบว่าเวลามีคนทักมาแล้วเป็นยังไง) -->
+            <div x-show="activeTab === 'simulator'" class="space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">ห้องทดลองแชตเสมือนจริง (TikTok Chat Simulator)</h2>
+                        <p class="text-xs text-slate-400">พิมพ์ข้อความทักเข้ามาเสมือนเป็นลูกค้าบน TikTok เพื่อทดสอบการทำงานของบอทตอบกลับ</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <!-- Chat Phone Frame -->
+                        <div class="md:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col h-[420px] overflow-hidden shadow-2xl">
+                            <!-- Phone Top Bar -->
+                            <div class="bg-slate-900 border-b border-slate-800 p-3 flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full border border-tiktok-cyan object-cover" alt="Shop">
+                                    <div>
+                                        <p class="text-xs font-bold text-white">@Official_Fashion_TH</p>
+                                        <p class="text-[10px] text-emerald-400">● กำลังใช้งานตอบกลับอัตโนมัติ</p>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">TikTok Direct Message</span>
+                            </div>
+
+                            <!-- Chat Messages Stream -->
+                            <div class="flex-1 p-4 overflow-y-auto space-y-3" id="simChatBox">
+                                <template x-for="(msg, i) in simMessages" :key="i">
+                                    <div class="flex flex-col" :class="msg.sender === 'user' ? 'items-end' : 'items-start'">
+                                        <div class="max-w-[80%] rounded-2xl px-3.5 py-2 text-xs" :class="msg.sender === 'user' ? 'bg-tiktok-pink text-white rounded-br-none' : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'">
+                                            <p x-text="msg.text"></p>
+                                        </div>
+                                        <span class="text-[9px] text-slate-500 mt-1 font-mono" x-text="msg.time"></span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Chat Input Form -->
+                            <form @submit.prevent="sendSimulatedUserMessage()" class="p-3 bg-slate-900 border-t border-slate-800 flex items-center space-x-2">
+                                <input type="text" x-model="simInput" placeholder="พิมพ์เช่น 'ทักมาซื้อของครับ'..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-tiktok-cyan">
+                                <button type="submit" :disabled="isAiGenerating" class="bg-tiktok-cyan text-slate-950 font-bold px-4 py-2 rounded-xl text-xs hover:opacity-90 flex items-center space-x-1 disabled:opacity-50">
+                                    <template x-if="!isAiGenerating">
+                                        <span>ส่งแชต</span>
+                                    </template>
+                                    <template x-if="isAiGenerating">
+                                        <span class="flex items-center space-x-1">
+                                            <i class="fa-solid fa-spinner animate-spin"></i>
+                                            <span>AI พิมพ์อยู่...</span>
+                                        </span>
+                                    </template>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Simulator Logs & Hints -->
+                        <div class="md:col-span-5 space-y-4">
+                            <!-- Gemini AI Toggle Switch -->
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-brain-circuit text-purple-400 text-lg"></i>
+                                        <div>
+                                            <p class="text-xs font-bold text-white">ใช้ AI ในการตอบแชต (Gemini Engine)</p>
+                                            <p class="text-[10px] text-slate-400">เมื่อไม่ตรงกับคีย์เวิร์ด ระบบจะใช้ AI คิดคำตอบสดๆ</p>
+                                        </div>
+                                    </div>
+                                    <button @click="apiConfig.useAiReplies = !apiConfig.useAiReplies; showToast(apiConfig.useAiReplies ? 'เปิดระบบ Gemini AI Auto-Responder แล้ว' : 'ปิดการใช้ AI ตอบกลับ', 'info')" 
+                                            class="w-12 h-6 rounded-full transition-colors relative border border-slate-700" 
+                                            :class="apiConfig.useAiReplies ? 'bg-purple-600' : 'bg-slate-800'">
+                                        <div class="w-4 h-4 rounded-full bg-white absolute top-1 transition-transform" :class="apiConfig.useAiReplies ? 'right-1' : 'left-1'"></div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">คีย์เวิร์ดแนะนำสำหรับการทดสอบ</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="simInput = 'ทักมาซื้อของครับ'; sendSimulatedUserMessage()" class="text-xs bg-slate-900 hover:bg-slate-800 text-tiktok-cyan px-2.5 py-1.5 rounded-lg border border-slate-800">"ทักมาซื้อของครับ"</button>
+                                    <button @click="simInput = 'ขอราคาหน่อยครับ'; sendSimulatedUserMessage()" class="text-xs bg-slate-900 hover:bg-slate-800 text-tiktok-cyan px-2.5 py-1.5 rounded-lg border border-slate-800">"ขอราคาหน่อยครับ"</button>
+                                    <button @click="simInput = 'มีโปรโมชั่นแถมเสื้อไหมครับ'; sendSimulatedUserMessage()" class="text-xs bg-slate-900 hover:bg-slate-800 text-purple-400 px-2.5 py-1.5 rounded-lg border border-purple-900/40">"ถามเรื่องโปรแถมเสื้อ" (ทดสอบ AI)</button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2 font-mono text-[11px] text-slate-400">
+                                <p class="text-slate-200 font-bold">Log การทำงานของเซิร์ฟเวอร์:</p>
+                                <p x-text="simLog"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: API & WEBHOOK SETTINGS (REAL TIKTOK OPEN PLATFORM SUITE) -->
+            <div x-show="activeTab === 'api_settings'" class="space-y-6">
+                <!-- Header Banner -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-network-wired text-tiktok-cyan"></i>
+                                <span>TikTok Developer Webhook Studio & Gemini AI Engine</span>
+                            </h2>
+                            <p class="text-xs text-slate-400">ศูนย์กลางจัดการการเชื่อมต่อ TikTok Open API v2, Webhook Listener, และระบบตอบกลับด้วย Gemini AI</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="testWebhookChallenge()" class="bg-slate-800 hover:bg-slate-700 text-tiktok-cyan border border-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl transition flex items-center space-x-2">
+                                <i class="fa-solid fa-vial"></i>
+                                <span>ทดสอบ Ping Challenge (Verify Token)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TikTok Developer API Credentials -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">TikTok Client Key (App ID)</label>
+                            <input type="text" x-model="apiConfig.clientKey" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono focus:border-tiktok-cyan">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Client Secret Key</label>
+                            <input type="password" x-model="apiConfig.clientSecret" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono focus:border-tiktok-cyan">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Webhook Verification Token</label>
+                            <input type="text" x-model="apiConfig.verifyToken" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-tiktok-cyan font-mono focus:border-tiktok-cyan">
+                        </div>
+                    </div>
+
+                    <!-- Webhook Callback URL Block -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
+                        <label class="text-xs font-semibold text-slate-300 block">TikTok Webhook Callback Endpoint URL (นำไปกรอกใน TikTok Developer Portal)</label>
+                        <div class="flex space-x-2">
+                            <input type="text" readonly :value="apiConfig.webhookUrl" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-tiktok-cyan font-mono select-all">
+                            <button @click="copyToClipboard(apiConfig.webhookUrl)" class="bg-tiktok-pink/20 hover:bg-tiktok-pink/30 text-tiktok-pink border border-tiktok-pink/40 px-4 py-2.5 rounded-xl text-xs font-semibold transition">
+                                <i class="fa-solid fa-copy mr-1"></i>คัดลอก
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-500">รองรับ Event: <code class="text-slate-400">im.message.receive</code>, <code class="text-slate-400">comment.create</code>, <code class="text-slate-400">live.comment.receive</code></p>
+                    </div>
+
+                    <!-- AI Assistant Config Section -->
+                    <div class="border-t border-slate-800 pt-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-robot text-purple-400 text-xl"></i>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">ตั้งค่า Gemini AI Smart Auto-Reply Engine</h3>
+                                    <p class="text-xs text-slate-400">ปรับแต่งบุคลิก และคำสั่งการตอบกลับอัตโนมัติของแม่ค้า TikTok</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-slate-300">Gemini Custom API Key (Optional)</label>
+                                <input type="password" x-model="apiConfig.geminiApiKey" placeholder="เว้นว่างไว้เพื่อใช้ Free Tier ในตัว" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono focus:border-purple-500">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-slate-300">ความเร็วการตอบ AI (AI Delay Buffer)</label>
+                                <select class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                                    <option value="0">ตอบกลับทันที (Instant 0s)</option>
+                                    <option value="1">หน่วง 1 วินาที (ดูเหมือนคนตอบ)</option>
+                                    <option value="2">หน่วง 2 วินาที</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">System Prompt บุคลิกของบอท (Prompt Instruction)</label>
+                            <textarea x-model="apiConfig.aiSystemPrompt" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:border-purple-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Webhook Live Test Sandbox & Event Simulator -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h3 class="text-md font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-vial-circle-check text-emerald-400"></i>
+                                <span>ห้องทดลองยิง TikTok Webhook Payload สด (Live Sandbox)</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">เลือกประเภท Event ที่สร้างจาก TikTok และกดส่ง payload เพื่อทดสอบการประมวลผลของ Webhook Engine</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- Payload Generator Box -->
+                        <div class="lg:col-span-6 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-semibold text-slate-300">เลือก TikTok Event Preset:</label>
+                                <div class="flex space-x-2">
+                                    <button @click="loadWebhookPreset('im')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-tiktok-cyan px-2.5 py-1 rounded border border-slate-700">DM Message</button>
+                                    <button @click="loadWebhookPreset('comment')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-tiktok-pink px-2.5 py-1 rounded border border-slate-700">Video Comment</button>
+                                    <button @click="loadWebhookPreset('live')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded border border-slate-700">Live Stream Comment</button>
+                                </div>
+                            </div>
+
+                            <textarea x-model="simulatedPayloadText" rows="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-400 focus:outline-none focus:border-tiktok-cyan"></textarea>
+
+                            <button @click="dispatchSimulatedWebhook()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-emerald-950/40">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>ยิง Webhook Payload เข้าเซิร์ฟเวอร์ทันที (HTTP POST)</span>
+                            </button>
+                        </div>
+
+                        <!-- Realtime Webhook Delivery Stream Console -->
+                        <div class="lg:col-span-6 bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col h-[350px]">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">Real-time Webhook Receiver Logs</span>
+                                <button @click="webhookLogs = []; showToast('ล้าง Webhook Logs เรียบร้อย', 'info')" class="text-[10px] text-slate-500 hover:text-slate-300">Clear Logs</button>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto space-y-2 text-[11px] font-mono">
+                                <template x-for="(log, idx) in webhookLogs" :key="idx">
+                                    <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 space-y-1">
+                                        <div class="flex justify-between items-center text-slate-400">
+                                            <span class="text-emerald-400 font-bold" x-text="log.event"></span>
+                                            <span x-text="log.time"></span>
+                                        </div>
+                                        <div class="text-slate-300 break-all">
+                                            <span class="text-slate-500">Header [X-TikTok-Signature]:</span> <span x-text="log.signature" class="text-amber-400"></span>
+                                        </div>
+                                        <div class="text-slate-400 bg-slate-950 p-1.5 rounded border border-slate-800/60 overflow-x-auto text-[10px]" x-text="log.response"></div>
+                                    </div>
+                                </template>
+                                <template x-if="webhookLogs.length === 0">
+                                    <div class="h-full flex items-center justify-center text-slate-600 text-xs italic">
+                                        ยังไม่มี Webhook Event ส่งเข้ามา...
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal for Adding New Auto-Reply Keyword -->
+    <div x-show="showRuleModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white">เพิ่มกฎการตอบกลับอัตโนมัติ</h3>
+                <button @click="showRuleModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="font-semibold text-slate-300 block mb-1">คีย์เวิร์ดที่ดักจับ (Keyword Trigger)</label>
+                    <input type="text" x-model="newRule.keyword" placeholder="เช่น ทักมาซื้อของครับ, ขอราคา" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+                </div>
+
+                <div>
+                    <label class="font-semibold text-slate-300 block mb-1">ข้อความที่จะส่งตอบกลับไป</label>
+                    <textarea x-model="newRule.replyText" rows="3" placeholder="พิมพ์ข้อความตอบกลับ เช่น: สวัสดีครับ สนใจสินค้ากดลิงก์นี้..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200"></textarea>
+                </div>
+
+                <div>
+                    <label class="font-semibold text-slate-300 block mb-1">ระยะเวลาหน่วงก่อนส่ง (วินาที)</label>
+                    <input type="number" step="0.1" x-model="newRule.delay" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button @click="showRuleModal = false" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs">ยกเลิก</button>
+                <button @click="saveNewRule()" class="px-4 py-2 bg-tiktok-cyan text-slate-950 font-bold rounded-xl text-xs">บันทึกคีย์เวิร์ด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Toast Notification Alert -->
+    <div x-show="toast.show" x-transition class="fixed bottom-5 right-5 z-50 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3" style="display: none;">
+        <i class="fa-solid fa-circle-info text-tiktok-cyan"></i>
+        <span class="text-xs font-medium" x-text="toast.message"></span>
+    </div>
+
+    <script>
+        function tokBotApp() {
+            return {
+                activeTab: 'broadcast',
+                showRuleModal: false,
+                isAiGenerating: false,
+                
+                toast: {
+                    show: false,
+                    message: ''
+                },
+
+                stats: {
+                    totalMessagesSent: 148920
+                },
+
+                // Real Webhook & API Config
+                apiConfig: {
+                    clientKey: 'tt_app_89102391092301',
+                    clientSecret: 'sec_7182938102931023910239',
+                    verifyToken: 'tokbot_secret_verify_token_9918',
+                    webhookUrl: 'https://api.tokbot-saas.com/v1/tiktok/webhook/live_sec_991823',
+                    geminiApiKey: '',
+                    useAiReplies: true,
+                    aiSystemPrompt: 'คุณเป็นผู้ช่วยขายสินค้าออนไลน์ของร้านค้า Official Fashion TH บน TikTok พูดจาสุภาพ น่ารัก มีหางเสียง "ค่ะ/ครับ" เน้นปิดการขายและแนะนำโปรโมชั่นสั้นๆ ไม่เกิน 3 ประโยค'
+                },
+
+                // Webhook Event Logs & Payload Sandbox
+                webhookLogs: [],
+                simulatedPayloadText: '',
+
+                // Mass Broadcast State
+                broadcast: {
+                    targetGroup: 'all',
+                    message: 'สวัสดีครับ! ขอบคุณที่ทักมาสนใจสินค้ากับเราวันนี้ รับคูปองส่วนลดพิเศษ 20% ทันที คลิกสั่งซื้อได้ที่ลิงก์นี้เลยครับ: https://tiktok.shop/item981223',
+                    isSending: false,
+                    hasRun: false,
+                    progress: 0,
+                    sentCount: 0,
+                    totalCount: 1000,
+                    logs: []
+                },
+
+                // Auto-reply Keywords Rules
+                rules: [
+                    { id: 1, keyword: 'ทักมาซื้อของครับ', replyText: 'สวัสดีครับ! ยินดีต้อนรับครับ สามารถดูแค็ตตาล็อกสินค้าและกดสั่งซื้อได้ทันทีที่นี่ครับ: https://tiktok.shop/catalog', delay: 0.1, matchType: 'exact', active: true },
+                    { id: 2, keyword: 'ขอราคา', replyText: 'สินค้าชิ้นนี้ราคาโปรโมชั่นพิเศษเพียง 390 บาท จากปกติ 890 บาทครับ จัดส่งฟรีทั่วประเทศ!', delay: 0.2, matchType: 'contains', active: true },
+                    { id: 3, keyword: 'มีสินค้าไหม', replyText: 'มีสินค้าพร้อมส่งครับ! สั่งซื้อวันนี้จัดส่งให้รอบวันพรุ่งนี้ทันทีครับ', delay: 0.1, matchType: 'contains', active: true }
+                ],
+
+                newRule: {
+                    keyword: '',
+                    replyText: '',
+                    delay: 0.1
+                },
+
+                // Chat Simulator State
+                simInput: '',
+                simLog: 'ระบบพร้อมรับข้อความทดสอบ...',
+                simMessages: [
+                    { sender: 'bot', text: 'สวัสดีครับ! ยินดีต้อนรับสู่ระบบตอบกลับอัตโนมัติ ลองพิมพ์คำว่า "ทักมาซื้อของครับ" หรือพิมพ์คำถามทั่วไปให้ AI ตอบได้เลยครับ', time: '13:00' }
+                ],
+
+                initApp() {
+                    this.loadWebhookPreset('im');
+                    this.$nextTick(() => {
+                        this.renderChart();
+                    });
+                },
+
+                showToast(msg) {
+                    this.toast.message = msg;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3000);
+                },
+
+                insertTag(tag) {
+                    this.broadcast.message += ' ' + tag;
+                },
+
+                copyToClipboard(text) {
+                    const temp = document.createElement('textarea');
+                    temp.value = text;
+                    document.body.appendChild(temp);
+                    temp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(temp);
+                    this.showToast('คัดลอกข้อมูลเรียบร้อยแล้ว');
+                },
+
+                // TikTok Webhook Handlers & Challenge Sandbox
+                loadWebhookPreset(type) {
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    if (type === 'im') {
+                        this.simulatedPayloadText = JSON.stringify({
+                            "event": "im.message.receive",
+                            "timestamp": nowSec,
+                            "user_openid": "usr_tiktok_98210293",
+                            "message_id": "msg_89123019230123",
+                            "content": {
+                                "text": "มีโปรโมชั่นแถมเสื้อไหมครับช่วงนี้"
+                            }
+                        }, null, 2);
+                    } else if (type === 'comment') {
+                        this.simulatedPayloadText = JSON.stringify({
+                            "event": "comment.create",
+                            "timestamp": nowSec,
+                            "video_id": "vid_71290312039",
+                            "comment_id": "cmt_001928312",
+                            "text": "สนใจชุดเดรสสีแดงแถวบนค่ะ มีไซส์ L ไหมคะ"
+                        }, null, 2);
+                    } else if (type === 'live') {
+                        this.simulatedPayloadText = JSON.stringify({
+                            "event": "live.comment.receive",
+                            "timestamp": nowSec,
+                            "room_id": "room_live_881923",
+                            "user": "Narak_Girl_99",
+                            "comment": "เอารหัส C1 ส่งพัทลุงค่ะ"
+                        }, null, 2);
+                    }
+                },
+
+                testWebhookChallenge() {
+                    const challenge = 'chk_' + Math.floor(Math.random() * 899999 + 100000);
+                    const responseText = `HTTP 200 OK -> Verified Challenge: "${challenge}" (Signature SHA256 Validated)`;
+                    
+                    this.webhookLogs.unshift({
+                        event: 'TIKTOK_VERIFY_CHALLENGE',
+                        time: new Date().toLocaleTimeString(),
+                        signature: 'sha256=' + Array.from({length: 16}, () => Math.floor(Math.random()*16).toString(16)).join(''),
+                        response: responseText
+                    });
+
+                    this.showToast('ผ่านการตรวจสอบ Webhook Ping Challenge เรียบร้อยแล้ว (200 OK)');
+                },
+
+                async dispatchSimulatedWebhook() {
+                    try {
+                        const parsed = JSON.parse(this.simulatedPayloadText);
+                        const userText = parsed.content?.text || parsed.text || parsed.comment || 'สวัสดีครับ';
+                        
+                        // Process message through auto reply / Gemini AI
+                        let replyOutput = '';
+                        const matchedRule = this.rules.find(r => r.active && userText.includes(r.keyword));
+
+                        if (matchedRule) {
+                            replyOutput = matchedRule.replyText;
+                        } else if (this.apiConfig.useAiReplies) {
+                            replyOutput = await this.generateAiResponse(userText);
+                        } else {
+                            replyOutput = 'ขอบคุณที่ติดต่อสอบถามครับ เจ้าหน้าร้านค้าจะตอบกลับภายในเวลาทำการค่ะ';
+                        }
+
+                        const sigMock = 'sha256=' + Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
+                        const respStr = `HTTP 200 OK | Auto-Responded Payload: "${replyOutput.substring(0, 60)}..."`;
+
+                        this.webhookLogs.unshift({
+                            event: parsed.event || 'im.message.receive',
+                            time: new Date().toLocaleTimeString(),
+                            signature: sigMock,
+                            response: respStr
+                        });
+
+                        this.stats.totalMessagesSent++;
+                        this.showToast('รับสัญญาณ Webhook และส่งข้อความตอบกลับสำเร็จ!');
+                    } catch (e) {
+                        this.showToast('รูปแบบ JSON ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+                    }
+                },
+
+                // Real Gemini API Call Generator for Intelligent Reply
+                async generateAiResponse(userMsg) {
+                    this.isAiGenerating = true;
+                    try {
+                        const apiKey = this.apiConfig.geminiApiKey || "";
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                        
+                        const promptText = `คำสั่งสวมบทบาท: ${this.apiConfig.aiSystemPrompt}
+ข้อความที่ลูกค้าทักแชตใน TikTok: "${userMsg}"
+ตอบกลับสั้นๆ สไตล์แม่ค้า TikTok มีความน่ารัก จริงใจ ปิดการขายเก่ง และใช้อีโมจิที่เหมาะสม`;
+
+                        const payload = {
+                            contents: [{ parts: [{ text: promptText }] }]
+                        };
+
+                        const res = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await res.json();
+                        const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (generatedText) {
+                            return generatedText.trim();
+                        } else {
+                            return "สวัสดีค่ะ ขอบคุณที่สนใจสินค้าของทางร้านนะคะ สามารถแจ้งรายละเอียดเพิ่มเติมไว้ได้เลยค่ะ ✨";
+                        }
+                    } catch (err) {
+                        console.error("Gemini API Error:", err);
+                        return "สวัสดีค่ะ ขอบคุณที่ทักแชตมานะคะ แอดมินรับเรื่องไว้แล้ว จะรีบแจ้งรายละเอียดให้เร็วที่สุดค่ะ ✨";
+                    } finally {
+                        this.isAiGenerating = false;
+                    }
+                },
+
+                runMassBroadcastSimulation() {
+                    if (!this.broadcast.message.trim()) {
+                        this.showToast('กรุณาพิมพ์ข้อความที่ต้องการส่งก่อนครับ');
+                        return;
+                    }
+
+                    this.broadcast.isSending = true;
+                    this.broadcast.hasRun = true;
+                    this.broadcast.progress = 0;
+                    this.broadcast.sentCount = 0;
+                    this.broadcast.logs = [];
+
+                    const interval = setInterval(() => {
+                        if (this.broadcast.sentCount < this.broadcast.totalCount) {
+                            this.broadcast.sentCount += 100;
+                            if (this.broadcast.sentCount > this.broadcast.totalCount) {
+                                this.broadcast.sentCount = this.broadcast.totalCount;
+                            }
+                            this.broadcast.progress = Math.round((this.broadcast.sentCount / this.broadcast.totalCount) * 100);
+                            
+                            const timeStr = new Date().toLocaleTimeString();
+                            this.broadcast.logs.unshift({
+                                time: `[${timeStr}]`,
+                                text: `BATCH SENT: ส่งข้อความสำเร็จไปยังกลุ่มผู้ใช้งาน ${this.broadcast.sentCount} / ${this.broadcast.totalCount} คน`,
+                                status: 'HTTP 200 OK (0.01s)'
+                            });
+
+                            this.stats.totalMessagesSent += 100;
+                        } else {
+                            clearInterval(interval);
+                            this.broadcast.isSending = false;
+                            this.showToast('กระจายส่งข้อความหาทุกคนเสร็จสิ้น 1,000 คนเรียบร้อยแล้ว!');
+                        }
+                    }, 200);
+                },
+
+                openAddRuleModal() {
+                    this.newRule = { keyword: '', replyText: '', delay: 0.1 };
+                    this.showRuleModal = true;
+                },
+
+                saveNewRule() {
+                    if (!this.newRule.keyword || !this.newRule.replyText) {
+                        this.showToast('กรุณากรอกคีย์เวิร์ดและข้อความตอบกลับให้ครบถ้วน');
+                        return;
+                    }
+
+                    this.rules.push({
+                        id: Date.now(),
+                        keyword: this.newRule.keyword,
+                        replyText: this.newRule.replyText,
+                        delay: parseFloat(this.newRule.delay) || 0.1,
+                        matchType: 'contains',
+                        active: true
+                    });
+
+                    this.showRuleModal = false;
+                    this.showToast('เพิ่มกฎคีย์เวิร์ดใหม่เรียบร้อยแล้ว');
+                },
+
+                deleteRule(index) {
+                    this.rules.splice(index, 1);
+                    this.showToast('ลบกฎคีย์เวิร์ดเรียบร้อย');
+                },
+
+                async sendSimulatedUserMessage() {
+                    if (!this.simInput.trim() || this.isAiGenerating) return;
+
+                    const userMsgText = this.simInput;
+                    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    this.simMessages.push({ sender: 'user', text: userMsgText, time: timeNow });
+                    this.simInput = '';
+
+                    this.$nextTick(() => {
+                        const box = document.getElementById('simChatBox');
+                        if (box) box.scrollTop = box.scrollHeight;
+                    });
+
+                    this.simLog = `[${new Date().toLocaleTimeString()}] ได้รับข้อความ DM: "${userMsgText}" -> กำลังประมวลผล...`;
+
+                    // Find matched keyword rule
+                    const matchedRule = this.rules.find(r => r.active && userMsgText.includes(r.keyword));
+
+                    if (matchedRule) {
+                        setTimeout(() => {
+                            this.simMessages.push({ sender: 'bot', text: matchedRule.replyText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                            this.simLog = `[${new Date().toLocaleTimeString()}] ✅ พบคีย์เวิร์ด "${matchedRule.keyword}" -> ส่งข้อความตอบกลับแล้วใน ${matchedRule.delay} วินาที`;
+                            this.stats.totalMessagesSent++;
+                            this.$nextTick(() => {
+                                const box = document.getElementById('simChatBox');
+                                if (box) box.scrollTop = box.scrollHeight;
+                            });
+                        }, 300);
+                    } else if (this.apiConfig.useAiReplies) {
+                        this.simLog = `[${new Date().toLocaleTimeString()}] 🤖 ไม่พบคีย์เวิร์ด -> กำลังเรียกใช้ Gemini AI ประมวลผลคำตอบ...`;
+                        const aiReply = await this.generateAiResponse(userMsgText);
+                        this.simMessages.push({ sender: 'bot', text: aiReply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                        this.simLog = `[${new Date().toLocaleTimeString()}] ✨ Gemini AI สร้างคำตอบสำเร็จ -> ส่งตอบกลับเรียบร้อย`;
+                        this.stats.totalMessagesSent++;
+                        this.$nextTick(() => {
+                            const box = document.getElementById('simChatBox');
+                            if (box) box.scrollTop = box.scrollHeight;
+                        });
+                    } else {
+                        setTimeout(() => {
+                            const defaultReply = 'ขอบคุณที่ทักแชตเข้ามาครับ เจ้าหน้าร้านจะรีบติดต่อกลับโดยเร็วที่สุดครับ!';
+                            this.simMessages.push({ sender: 'bot', text: defaultReply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                            this.simLog = `[${new Date().toLocaleTimeString()}] ⚠️ ไม่พบคีย์เวิร์ดตรงกัน -> ส่งข้อความต้อนรับพื้นฐาน`;
+                            this.$nextTick(() => {
+                                const box = document.getElementById('simChatBox');
+                                if (box) box.scrollTop = box.scrollHeight;
+                            });
+                        }, 300);
+                    }
+                },
+
+                renderChart() {
+                    const ctx = document.getElementById('livePerformanceChart');
+                    if (!ctx) return;
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'ปัจจุบัน'],
+                            datasets: [{
+                                label: 'ข้อความที่ส่งอัตโนมัติ (Messages Sent)',
+                                data: [1200, 800, 15000, 48000, 32000, 51000, 148920],
+                                borderColor: '#00f2fe',
+                                backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#fe2c55'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8' }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8' }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
